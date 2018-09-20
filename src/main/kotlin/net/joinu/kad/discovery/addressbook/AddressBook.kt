@@ -1,12 +1,13 @@
-package net.joinu.kad.discovery
+package net.joinu.kad.discovery.addressbook
+
+import net.joinu.kad.discovery.KAddress
+import net.joinu.kad.discovery.KadId
 
 
 /**
  * Interface for every kademlia address book implementation.
  * Used to track peers you communicate.
  * Address book should be created when peer knows it's own address.
- *
- * TODO: add clustering
  */
 interface AddressBook {
     /**
@@ -46,33 +47,13 @@ interface AddressBook {
     fun getMine(): KAddress
 
     /**
-     * Returns XOR-closest to target id addresses
+     * Returns the cluster of target id
      *
-     * @param to            target id
-     * @param limit         max number of addresses (it's like k-bucket but k is configurable)
-     * @return              list of [limit] closest to [to] addresses
+     * @param of            target id
+     * @return              list of K..K*4 closest to [of] addresses
      */
-    fun getClosest(to: KadId, limit: Int): List<KAddress>
+    fun getCluster(of: KadId): List<KAddress>
 }
 
-class InMemoryAddressBook(
-    private val myAddress: KAddress,
-    private val addresses: HashMap<KadId, KAddress> = hashMapOf()
-) : AddressBook {
-
-    override fun getMine() = myAddress
-
-    override fun addRecord(address: KAddress) {
-        addresses[address.id] = address
-    }
-
-    override fun removeRecord(id: KadId) {
-        addresses.remove(id)
-    }
-
-    override fun getRecords(): List<KAddress> = addresses.values.toList()
-
-    override fun getRecordById(id: KadId): KAddress? = addresses[id]
-
-    override fun getClosest(to: KadId, limit: Int) = addresses.values.sortedBy { it.id.xor(to) }.take(limit)
-}
+fun AddressBook.getMyCluster() = getCluster(getMine().id)
+fun AddressBook.getMyClusterExceptMe() = getMyCluster().filter { it != getMine() }

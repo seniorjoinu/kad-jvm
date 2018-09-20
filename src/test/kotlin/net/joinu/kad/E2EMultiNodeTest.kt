@@ -1,8 +1,8 @@
 package net.joinu.kad
 
 import kotlinx.coroutines.experimental.runBlocking
-import net.joinu.kad.discovery.AddressBook
 import net.joinu.kad.discovery.KademliaService
+import net.joinu.kad.discovery.addressbook.AddressBook
 import net.joinu.osen.Address
 import org.junit.After
 import org.junit.Before
@@ -77,7 +77,7 @@ class E2EMultiNodeTest {
         assert(nodesPorts.map { pivot.ping(Address(host, it.p2p)) }.all { it })
 
         services.forEachIndexed { idx, service ->
-            val nodes = addressBooks.map { service.findNode(it.getMine().id, nodesCount) }
+            val nodes = addressBooks.map { service.findNode(it.getMine().id) }
             assert(nodes.all { it != null })
         }
     }
@@ -96,10 +96,10 @@ class E2EMultiNodeTest {
 
             kademliaService.ping(Address(host, peerPort.p2p))
         }
-        assert(addressBooks.map { it.getRecords().size == 2 }.all { it })
+        assert(addressBooks.map { it.getRecords().isNotEmpty() }.all { it })
 
         val found = services.map { service ->
-            addressBooks.map { service.findNode(it.getMine().id, nodesCount) }
+            addressBooks.map { service.findNode(it.getMine().id) }
         }
         val correct = found.map { it.all { it != null } }.all { it }
         assert(correct)
@@ -111,11 +111,11 @@ class E2EMultiNodeTest {
         val addressBooks = appContexts.map { it.getBean(AddressBook::class.java) }
 
         services.forEachIndexed { index, kademliaService ->
-            if (index != 0) assert(kademliaService.bootstrap(Address(host, nodesPorts[0].p2p), nodesCount / 3))
+            if (index != 0) assert(kademliaService.bootstrap(Address(host, nodesPorts[0].p2p)))
         }
 
         val found = services.map { service ->
-            addressBooks.map { service.findNode(it.getMine().id, nodesCount) }
+            addressBooks.map { service.findNode(it.getMine().id) }
         }
         val correct = found.map { it.all { it != null } }.all { it }
         assert(correct)

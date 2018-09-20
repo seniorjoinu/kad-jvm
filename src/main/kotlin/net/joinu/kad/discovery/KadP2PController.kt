@@ -1,5 +1,6 @@
 package net.joinu.kad.discovery
 
+import net.joinu.kad.discovery.addressbook.AddressBook
 import net.joinu.osen.Address
 import net.joinu.osen.On
 import net.joinu.osen.P2PController
@@ -8,8 +9,10 @@ import org.springframework.beans.factory.annotation.Autowired
 
 const val KAD_TOPIC = "_KAD"
 object KadMsgTypes {
-    const val PING = "0"
-    const val FIND_NODE = "1"
+    const val PING = "PING"
+    const val FIND_NODE = "FIND_NODE"
+    const val GREET = "GREET"
+    const val BYE = "BYE"
 }
 
 /**
@@ -17,9 +20,8 @@ object KadMsgTypes {
  *
  * @param senderId              id of the sender
  * @param findId                id of the peer sender wish to find
- * @param k                     K-parameter (how much peers max do we need in response)
  */
-data class FindNodeRequest(val senderId: KadId, val findId: KadId, val k: Int)
+data class FindNodeRequest(val senderId: KadId, val findId: KadId)
 
 /**
  * Payload for a FIND_NODE response. We return a peer address if we know it, otherwise we return a list of closest
@@ -44,6 +46,16 @@ class KadP2PController {
         return addressBook.getMine().id
     }
 
+    @On(KadMsgTypes.GREET)
+    fun onGreet(senderId: KadId, sender: Address) {
+        addressBook.addRecord(KAddress(senderId, sender))
+    }
+
+    @On(KadMsgTypes.BYE)
+    fun onBye(senderId: KadId) {
+        addressBook.removeRecord(senderId)
+    }
+
     @On(KadMsgTypes.FIND_NODE)
     fun onFindNode(payload: FindNodeRequest, sender: Address): FindNodeResponse {
         val peerExact = if (addressBook.getMine().id == payload.findId)
@@ -51,7 +63,7 @@ class KadP2PController {
         else
             addressBook.getRecordById(payload.findId)
 
-        val peersToAsk = addressBook.getClosest(payload.findId, payload.k)
+        val peersToAsk = addressBook.getCluster(payload.findId)
 
         val result = if (peerExact != null)
             FindNodeResponse(peerExact, null)

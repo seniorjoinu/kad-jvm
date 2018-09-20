@@ -1,16 +1,16 @@
 package net.joinu.kad
 
-import net.joinu.kad.discovery.AddressBook
-import net.joinu.kad.discovery.InMemoryAddressBook
 import net.joinu.kad.discovery.KAddress
+import net.joinu.kad.discovery.addressbook.AddressBook
+import net.joinu.kad.discovery.addressbook.InMemoryBinaryTrieAddressBook
 import net.joinu.osen.Address
 import net.joinu.osen.P2P
+import net.joinu.utils.CryptoUtils
+import net.joinu.utils.toBigInteger
 import org.springframework.boot.SpringApplication
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.context.annotation.Bean
 import org.springframework.context.support.GenericApplicationContext
-import java.math.BigInteger
-import java.util.*
 
 
 @SpringBootApplication
@@ -31,10 +31,10 @@ open class TestApplication {
             port = portFromProps.toInt()
         }
 
-        val id = BigInteger.valueOf(Random().nextLong())
+        val id by lazy { CryptoUtils.generateKeyPair().public.toBigInteger() }
         val address = Address("localhost", port)
 
-        return InMemoryAddressBook(KAddress(id, address))
+        return InMemoryBinaryTrieAddressBook(KAddress(id, address))
     }
 }
 

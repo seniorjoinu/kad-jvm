@@ -1,5 +1,7 @@
 package net.joinu.kad.discovery
 
+import net.joinu.kad.discovery.addressbook.AddressBook
+import net.joinu.kad.discovery.addressbook.getMyClusterExceptMe
 import net.joinu.osen.Address
 import net.joinu.osen.Message
 import net.joinu.osen.P2P
@@ -18,6 +20,21 @@ class KademliaService {
 
     private val asked = hashMapOf<KadId, MutableSet<KAddress>>()
 
+    suspend fun bootstrap(bootstrapPeer: Address): Boolean {
+        if (!ping(bootstrapPeer)) return false
+
+        findNode(addressBook.getMine().id)
+
+        val myCluster = addressBook.getCluster(addressBook.getMine().id)
+        myCluster.forEach { greet(it.address) }
+
+        return true
+    }
+
+    suspend fun byeAll() {
+        addressBook.getMyClusterExceptMe().forEach { bye(it.address) }
+    }
+
     suspend fun ping(peer: Address): Boolean {
         val message = Message(KAD_TOPIC, KadMsgTypes.PING, addressBook.getMine().id)
 
@@ -30,21 +47,26 @@ class KademliaService {
         }
     }
 
-    suspend fun bootstrap(bootstrapPeer: Address, limit: Int): Boolean {
-        if (!ping(bootstrapPeer)) return false
-
-        findNode(addressBook.getMine().id, limit)
-
-        return true
+    suspend fun greet(peer: Address) {
+        val message = Message(KAD_TOPIC, KadMsgTypes.GREET, addressBook.getMine().id)
+        p2p.send(peer, message)
     }
 
-    tailrec suspend fun findNode(findId: KadId, limit: Int): KAddress? {
+    suspend fun bye(peer: Address) {
+        val message = Message(KAD_TOPIC, KadMsgTypes.BYE, addressBook.getMine().id)
+        p2p.send(peer, message)
+
+        val peerAddr = addressBook.getRecords().find { it.address == peer } ?: return
+        addressBook.removeRecord(peerAddr.id)
+    }
+
+    tailrec suspend fun findNode(findId: KadId): KAddress? {
         // if already have him in address book - return
         val peerFromAddressBook = addressBook.getRecordById(findId)
         if (peerFromAddressBook != null) return peerFromAddressBook
 
         // otherwise pick closest k-bucket
-        val peers = addressBook.getClosest(findId, limit)
+        val peers = addressBook.getCluster(findId)
 
         // initialize list of asked peers if it is uninitialized
         if (!asked.containsKey(findId)) asked[findId] = mutableSetOf()
@@ -59,7 +81,7 @@ class KademliaService {
         val peersToAsk = peers.subtract(asked[findId]!!)
 
         // getting responses from peers
-        val responses = peersToAsk.map { sendFindNode(it.address, findId, limit) }
+        val responses = peersToAsk.map { sendFindNode(it.address, findId) }
 
         // update asked list
         asked[findId]!!.addAll(peersToAsk)
@@ -78,12 +100,12 @@ class KademliaService {
 
             return peer
         } else {
-            findNode(findId, limit)
+            findNode(findId)
         }
     }
 
-    private suspend fun sendFindNode(peer: Address, findId: KadId, limit: Int): FindNodeResponse {
-        val payload = FindNodeRequest(addressBook.getMine().id, findId, limit)
+    private suspend fun sendFindNode(peer: Address, findId: KadId): FindNodeResponse {
+        val payload = FindNodeRequest(addressBook.getMine().id, findId)
         val message = Message(KAD_TOPIC, KadMsgTypes.FIND_NODE, payload)
 
         return p2p.sendAndReceive(peer, message)
