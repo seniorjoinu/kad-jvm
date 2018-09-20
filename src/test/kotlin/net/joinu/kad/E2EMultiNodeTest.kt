@@ -5,7 +5,8 @@ import net.joinu.kad.discovery.KademliaService
 import net.joinu.kad.discovery.addressbook.AddressBook
 import net.joinu.osen.Address
 import org.junit.After
-import org.junit.Before
+import org.junit.AfterClass
+import org.junit.BeforeClass
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.springframework.boot.builder.SpringApplicationBuilder
@@ -35,27 +36,38 @@ fun createNodes(count: Int, baseWebPort: Int = 8080, baseP2PPort: Int = 1337): L
 
 @RunWith(SpringJUnit4ClassRunner::class)
 class E2EMultiNodeTest {
-    lateinit var nodesPorts: List<Ports>
-    private val host = "localhost"
 
-    private val nodesCount = 10 // change this to change number of nodes
+    companion object {
+        lateinit var nodesPorts: List<Ports>
+        private val host = "localhost"
 
-    lateinit var apps: List<SpringApplicationBuilder>
-    lateinit var appContexts: List<ConfigurableApplicationContext>
+        private val nodesCount = 30 // change this to change number of nodes
 
-    @Before
-    fun initNodes() {
-        nodesPorts = createNodes(nodesCount)
+        lateinit var apps: List<SpringApplicationBuilder>
+        lateinit var appContexts: List<ConfigurableApplicationContext>
 
-        apps = nodesPorts.map { SpringApplicationBuilder(TestApplication::class.java).properties(it.toProperties()) }
-        appContexts = apps.map { it.run() }
+        @JvmStatic
+        @BeforeClass
+        fun initNodes() {
+            nodesPorts = createNodes(nodesCount)
+
+            apps = nodesPorts.map { SpringApplicationBuilder(TestApplication::class.java).properties(it.toProperties()) }
+            appContexts = apps.map { it.run() }
+        }
+
+        @JvmStatic
+        @AfterClass
+        fun destroyNodes() {
+            appContexts.forEach {
+                it.close()
+            }
+        }
     }
 
     @After
-    fun destroyNodes() {
-        appContexts.forEach {
-            it.close()
-        }
+    fun clearAddresses() {
+        val addressBooks = appContexts.map { it.getBean(AddressBook::class.java) }
+        addressBooks.forEach { it.clear() }
     }
 
     @Test
@@ -112,10 +124,13 @@ class E2EMultiNodeTest {
 
         services.forEachIndexed { index, kademliaService ->
             if (index != 0) assert(kademliaService.bootstrap(Address(host, nodesPorts[0].p2p)))
+            println("NODE $index BOOTSTRAPPED")
         }
 
-        val found = services.map { service ->
-            addressBooks.map { service.findNode(it.getMine().id) }
+        val found = services.mapIndexed { idx, service ->
+            val foundAll = addressBooks.map { service.findNode(it.getMine().id) }
+            println("NODE $idx FOUND ALL OTHER NODES")
+            foundAll
         }
         val correct = found.map { it.all { it != null } }.all { it }
         assert(correct)

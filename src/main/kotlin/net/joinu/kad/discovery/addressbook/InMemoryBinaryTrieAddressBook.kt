@@ -9,13 +9,14 @@ import net.joinu.kad.discovery.TrieNode
 class InMemoryBinaryTrieAddressBook(
     private val myAddress: KAddress,
     private val k: Int = 20,
-    private val addresses: BinaryTrie = BinaryTrie(TrieNode(kBucket = mutableListOf(myAddress.id)), k)
+    private val addresses: BinaryTrie = BinaryTrie(TrieNode(), k)
 ) : AddressBook {
 
     private val addressesByIds = hashMapOf<KadId, KAddress>()
 
     init {
         addressesByIds[myAddress.id] = myAddress
+        addresses.addData(myAddress.id)
     }
 
     override fun addRecord(address: KAddress) {
@@ -35,4 +36,12 @@ class InMemoryBinaryTrieAddressBook(
     override fun getMine() = myAddress
 
     override fun getCluster(of: KadId) = addresses.getNeighbors(of).map { addressesByIds[it]!! }
+
+    override fun clear() {
+        addressesByIds.clear()
+        addresses.clear()
+
+        addressesByIds[myAddress.id] = myAddress
+        addresses.addData(myAddress.id)
+    }
 }

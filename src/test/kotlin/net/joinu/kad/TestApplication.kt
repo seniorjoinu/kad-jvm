@@ -34,7 +34,7 @@ open class TestApplication {
         val id by lazy { CryptoUtils.generateKeyPair().public.toBigInteger() }
         val address = Address("localhost", port)
 
-        return InMemoryBinaryTrieAddressBook(KAddress(id, address))
+        return InMemoryBinaryTrieAddressBook(KAddress(id, address), 3)
     }
 }
 

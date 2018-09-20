@@ -53,6 +53,11 @@ interface AddressBook {
      * @return              list of K..K*4 closest to [of] addresses
      */
     fun getCluster(of: KadId): List<KAddress>
+
+    /**
+     * Clears address book
+     */
+    fun clear()
 }
 
 fun AddressBook.getMyCluster() = getCluster(getMine().id)

@@ -26,4 +26,9 @@ class InMemoryHashMapAddressBook(
     override fun getRecordById(id: KadId): KAddress? = addresses[id]
 
     override fun getCluster(of: KadId): List<KAddress> = addresses.values.sortedBy { it.id.xor(of) }.take(k)
+
+    override fun clear() {
+        addresses.clear()
+        addresses[myAddress.id] = myAddress
+    }
 }

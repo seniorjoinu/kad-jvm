@@ -63,7 +63,7 @@ class KadP2PController {
         else
             addressBook.getRecordById(payload.findId)
 
-        val peersToAsk = addressBook.getCluster(payload.findId)
+        val peersToAsk = addressBook.getCluster(payload.findId).sortedBy { it.id.xor(payload.findId) }
 
         val result = if (peerExact != null)
             FindNodeResponse(peerExact, null)

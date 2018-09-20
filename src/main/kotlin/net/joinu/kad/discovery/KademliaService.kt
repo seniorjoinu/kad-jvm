@@ -60,48 +60,58 @@ class KademliaService {
         addressBook.removeRecord(peerAddr.id)
     }
 
-    tailrec suspend fun findNode(findId: KadId): KAddress? {
+    suspend fun findNode(findId: KadId): KAddress? {
         // if already have him in address book - return
         val peerFromAddressBook = addressBook.getRecordById(findId)
         if (peerFromAddressBook != null) return peerFromAddressBook
 
-        // otherwise pick closest k-bucket
-        val peers = addressBook.getCluster(findId)
-
         // initialize list of asked peers if it is uninitialized
         if (!asked.containsKey(findId)) asked[findId] = mutableSetOf()
 
-        // if all peers are already asked - return null
-        if (peers.map { asked[findId]!!.contains(it) }.all { it }) {
-            asked.remove(findId)
-            return null
+        // first of all search the closest known peers (from cluster)
+        while (true) {
+            val peers = addressBook.getCluster(findId)
+            val closestPeer = peers
+                .sortedBy { it.id.xor(findId) }
+                .firstOrNull { !asked[findId]!!.contains(it) } ?: break
+
+            val result = sendFindNodeAndProcessResult(closestPeer, findId)
+            if (result != null) return result
         }
 
-        // filtering peers we already asked
-        val peersToAsk = peers.subtract(asked[findId]!!)
+        // if that didn't work - search other peers which you know
+        while (true) {
+            val peers = addressBook.getRecords()
+            val closestPeer = peers
+                .sortedBy { it.id.xor(findId) }
+                .firstOrNull { !asked[findId]!!.contains(it) }
 
-        // getting responses from peers
-        val responses = peersToAsk.map { sendFindNode(it.address, findId) }
+            // if we can't find a single node who knows about [findId] - return nothing
+            if (closestPeer == null) {
+                asked.remove(findId)
+                return null
+            }
 
-        // update asked list
-        asked[findId]!!.addAll(peersToAsk)
+            val result = sendFindNodeAndProcessResult(closestPeer, findId)
+            if (result != null) return result
+        }
+    }
 
-        // add all new contacts to address book
-        responses
-            .filter { it.peersToAsk != null }
-            .flatMap { it.peersToAsk!! }
-            .forEach { addressBook.addRecord(it) }
+    private suspend fun sendFindNodeAndProcessResult(peer: KAddress, findId: KadId): KAddress? {
+        val response = sendFindNode(peer.address, findId)
 
-        // if target peer found - add it to address book and return, otherwise - repeat with an updated address book
-        val peer = responses.firstOrNull { it.peerExact != null }?.peerExact
-        return if (peer != null) {
-            addressBook.addRecord(peer)
+        if (response.peerExact != null) {
+            addressBook.addRecord(response.peerExact)
             asked.remove(findId)
 
-            return peer
-        } else {
-            findNode(findId)
+            return response.peerExact
         }
+
+        asked[findId]!!.add(peer)
+
+        response.peersToAsk!!.forEach { addressBook.addRecord(it) }
+
+        return null
     }
 
     private suspend fun sendFindNode(peer: Address, findId: KadId): FindNodeResponse {

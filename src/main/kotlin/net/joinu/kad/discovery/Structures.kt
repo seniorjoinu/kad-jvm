@@ -29,6 +29,13 @@ data class TrieNode(
 data class BinaryTrie(private val root: TrieNode, private val k: Int) {
     private val leaves: MutableList<TrieNode> = mutableListOf(root)
 
+    fun clear() {
+        leaves.clear()
+        root.kBucket.clear()
+        root.one = null
+        root.zero = null
+    }
+
     override fun toString(): String {
         val elems = getNeighborhoodsByName()
             .map {
