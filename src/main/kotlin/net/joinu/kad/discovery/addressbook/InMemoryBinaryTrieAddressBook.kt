@@ -1,9 +1,9 @@
 package net.joinu.kad.discovery.addressbook
 
-import net.joinu.kad.discovery.BinaryTrie
-import net.joinu.kad.discovery.KAddress
-import net.joinu.kad.discovery.KadId
-import net.joinu.kad.discovery.TrieNode
+import net.joinu.kad.discovery.*
+import net.joinu.utils.CryptoUtils
+import net.joinu.utils.SerializationUtils
+import java.math.BigInteger
 
 
 class InMemoryBinaryTrieAddressBook(
@@ -35,7 +35,12 @@ class InMemoryBinaryTrieAddressBook(
 
     override fun getMine() = myAddress
 
-    override fun getCluster(of: KadId) = addresses.getNeighbors(of).map { addressesByIds[it]!! }
+    override fun getCluster(of: KadId): Cluster {
+        val peerIds = addresses.getNeighbors(of).sorted()
+        val name = CryptoUtils.hash(SerializationUtils.anyToBytes(peerIds))
+
+        return Cluster(BigInteger(name), peerIds.map { addressesByIds[it]!! })
+    }
 
     override fun clear() {
         addressesByIds.clear()

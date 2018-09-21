@@ -144,3 +144,5 @@ data class BinaryTrie(private val root: TrieNode, private val k: Int) {
         return currentNode
     }
 }
+
+data class Cluster(val name: KadId, val peers: List<KAddress>)

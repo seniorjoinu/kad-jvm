@@ -1,5 +1,6 @@
 package net.joinu.kad.discovery.addressbook
 
+import net.joinu.kad.discovery.Cluster
 import net.joinu.kad.discovery.KAddress
 import net.joinu.kad.discovery.KadId
 
@@ -52,7 +53,7 @@ interface AddressBook {
      * @param of            target id
      * @return              list of K..K*4 closest to [of] addresses
      */
-    fun getCluster(of: KadId): List<KAddress>
+    fun getCluster(of: KadId): Cluster
 
     /**
      * Clears address book
@@ -61,4 +62,7 @@ interface AddressBook {
 }
 
 fun AddressBook.getMyCluster() = getCluster(getMine().id)
-fun AddressBook.getMyClusterExceptMe() = getMyCluster().filter { it != getMine() }
+fun AddressBook.getMyClusterExceptMe(): Cluster {
+    val cluster = getMyCluster()
+    return Cluster(cluster.name, cluster.peers.filter { it != getMine() })
+}

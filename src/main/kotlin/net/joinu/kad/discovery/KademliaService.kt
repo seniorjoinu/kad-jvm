@@ -26,13 +26,13 @@ class KademliaService {
         findNode(addressBook.getMine().id)
 
         val myCluster = addressBook.getCluster(addressBook.getMine().id)
-        myCluster.forEach { greet(it.address) }
+        myCluster.peers.forEach { greet(it.address) }
 
         return true
     }
 
     suspend fun byeAll() {
-        addressBook.getMyClusterExceptMe().forEach { bye(it.address) }
+        addressBook.getMyClusterExceptMe().peers.forEach { bye(it.address) }
     }
 
     suspend fun ping(peer: Address): Boolean {
@@ -70,8 +70,8 @@ class KademliaService {
 
         // first of all search the closest known peers (from cluster)
         while (true) {
-            val peers = addressBook.getCluster(findId)
-            val closestPeer = peers
+            val cluster = addressBook.getCluster(findId)
+            val closestPeer = cluster.peers
                 .sortedBy { it.id.xor(findId) }
                 .firstOrNull { !asked[findId]!!.contains(it) } ?: break
 

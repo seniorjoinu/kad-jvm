@@ -1,8 +1,6 @@
 package net.joinu.kad
 
 import kotlinx.coroutines.experimental.runBlocking
-import net.joinu.kad.discovery.KAddress
-import net.joinu.kad.discovery.KadId
 import net.joinu.kad.discovery.KademliaService
 import net.joinu.kad.discovery.addressbook.AddressBook
 import net.joinu.kad.discovery.addressbook.getMyCluster
@@ -12,14 +10,13 @@ import org.junit.Before
 import org.junit.Test
 import org.springframework.boot.builder.SpringApplicationBuilder
 import org.springframework.context.ConfigurableApplicationContext
-import java.math.BigInteger
 
 
 class E2EClusterTest {
     lateinit var nodesPorts: List<Ports>
     private val host = "localhost"
 
-    private val nodesCount = 1000 // change this to change number of nodes
+    private val nodesCount = 100 // change this to change number of nodes
 
     lateinit var apps: List<SpringApplicationBuilder>
     lateinit var appContexts: List<ConfigurableApplicationContext>
@@ -50,11 +47,11 @@ class E2EClusterTest {
             assert(kademliaService.bootstrap(Address(host, nodesPorts[0].p2p)))
 
             val clusters = addressBooks.map { it.getMyCluster() }
-            val clustersByLabels = clusters.groupBy { getClusterLabel(it) }
+            val clustersByLabels = clusters.groupBy { it.name }
 
             val clustersConsistent = clustersByLabels.values.all { clustersWithSameName ->
-                val first = clustersWithSameName.first().toSet()
-                clustersWithSameName.all { cluster -> cluster.toSet() == first }
+                val first = clustersWithSameName.first().peers.toSet()
+                clustersWithSameName.all { cluster -> cluster.peers.toSet() == first }
             }
 
             assert(clustersConsistent)
@@ -64,25 +61,14 @@ class E2EClusterTest {
             kademliaService.byeAll()
 
             val clusters = addressBooks.map { it.getMyCluster() }
-            val clustersByLabels = clusters.groupBy { getClusterLabel(it) }
+            val clustersByLabels = clusters.groupBy { it.name }
 
             val clustersConsistent = clustersByLabels.values.all { clustersWithSameName ->
-                val first = clustersWithSameName.first().toSet()
-                clustersWithSameName.all { cluster -> cluster.toSet() == first }
+                val first = clustersWithSameName.first().peers.toSet()
+                clustersWithSameName.all { cluster -> cluster.peers.toSet() == first }
             }
 
             assert(clustersConsistent)
         }
     }
-}
-
-fun getClusterLabel(cluster: List<KAddress>): KadId {
-    val sum = cluster.fold(BigInteger.ZERO) { acc, addr -> acc + addr.id }
-    val size = BigInteger.valueOf(cluster.size.toLong())
-
-    if (size == BigInteger.ZERO) {
-        println()
-    }
-
-    return sum / size
 }
