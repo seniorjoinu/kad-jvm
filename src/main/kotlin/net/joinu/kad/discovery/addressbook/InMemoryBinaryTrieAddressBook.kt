@@ -1,8 +1,6 @@
 package net.joinu.kad.discovery.addressbook
 
 import net.joinu.kad.discovery.*
-import net.joinu.utils.CryptoUtils
-import net.joinu.utils.SerializationUtils
 import java.math.BigInteger
 
 
@@ -37,9 +35,10 @@ class InMemoryBinaryTrieAddressBook(
 
     override fun getCluster(of: KadId): Cluster {
         val peerIds = addresses.getNeighbors(of).sorted()
-        val name = CryptoUtils.hash(SerializationUtils.anyToBytes(peerIds))
+        val name = peerIds
+            .fold(BigInteger.ZERO) { acc, id -> acc + id } / BigInteger.valueOf(peerIds.size.toLong())
 
-        return Cluster(BigInteger(name), peerIds.map { addressesByIds[it]!! })
+        return Cluster(name, peerIds.map { addressesByIds[it]!! })
     }
 
     override fun clear() {

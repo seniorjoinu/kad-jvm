@@ -6,34 +6,19 @@ import net.joinu.kad.discovery.addressbook.AddressBook
 import net.joinu.kad.discovery.addressbook.getMyCluster
 import net.joinu.osen.Address
 import org.junit.After
-import org.junit.Before
 import org.junit.Test
-import org.springframework.boot.builder.SpringApplicationBuilder
-import org.springframework.context.ConfigurableApplicationContext
 
 
-class E2EClusterTest {
-    lateinit var nodesPorts: List<Ports>
-    private val host = "localhost"
-
-    private val nodesCount = 100 // change this to change number of nodes
-
-    lateinit var apps: List<SpringApplicationBuilder>
-    lateinit var appContexts: List<ConfigurableApplicationContext>
-
-    @Before
-    fun initNodes() {
-        nodesPorts = createNodes(nodesCount)
-
-        apps = nodesPorts.map { SpringApplicationBuilder(TestApplication::class.java).properties(it.toProperties()) }
-        appContexts = apps.map { it.run() }
+class E2EClusterTest : MultiNodeTest() {
+    init {
+        k = 3
+        nodesCount = 100
     }
 
     @After
-    fun destroyNodes() {
-        appContexts.forEach {
-            it.close()
-        }
+    fun clearAddresses() {
+        val addressBooks = MultiNodeTest.appContexts.map { it.getBean(AddressBook::class.java) }
+        addressBooks.forEach { it.clear() }
     }
 
     @Test
@@ -44,7 +29,7 @@ class E2EClusterTest {
         services.forEachIndexed { index, kademliaService ->
             if (index == 0) return@forEachIndexed
 
-            assert(kademliaService.bootstrap(Address(host, nodesPorts[0].p2p)))
+            assert(kademliaService.bootstrap(Address(host, nodesConfigs[0].p2pPort)))
 
             val clusters = addressBooks.map { it.getMyCluster() }
             val clustersByLabels = clusters.groupBy { it.name }
@@ -58,7 +43,7 @@ class E2EClusterTest {
         }
 
         services.forEachIndexed { index, kademliaService ->
-            kademliaService.byeAll()
+            kademliaService.byeMyCluster()
 
             val clusters = addressBooks.map { it.getMyCluster() }
             val clustersByLabels = clusters.groupBy { it.name }

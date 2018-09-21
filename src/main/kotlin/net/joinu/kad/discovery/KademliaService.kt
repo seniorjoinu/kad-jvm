@@ -13,7 +13,7 @@ import java.util.concurrent.TimeoutException
 @Service
 class KademliaService {
     @Autowired
-    private lateinit var addressBook: AddressBook
+    lateinit var addressBook: AddressBook
 
     @Autowired
     private lateinit var p2p: P2P
@@ -31,7 +31,7 @@ class KademliaService {
         return true
     }
 
-    suspend fun byeAll() {
+    suspend fun byeMyCluster() {
         addressBook.getMyClusterExceptMe().peers.forEach { bye(it.address) }
     }
 

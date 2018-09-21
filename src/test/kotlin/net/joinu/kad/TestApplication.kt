@@ -25,16 +25,14 @@ open class TestApplication {
 
     @Bean()
     open fun addressBook(context: GenericApplicationContext): AddressBook {
-        var port = 1337
-        val portFromProps = context.environment.getProperty("node.port")
-        if (portFromProps != null) {
-            port = portFromProps.toInt()
-        }
+        val portFromProps = context.environment.getProperty("node.port")!!
 
         val id by lazy { CryptoUtils.generateKeyPair().public.toBigInteger() }
-        val address = Address("localhost", port)
+        val address = Address("localhost", portFromProps.toInt())
 
-        return InMemoryBinaryTrieAddressBook(KAddress(id, address), 3)
+        val kFromProps = context.environment.getProperty("node.k")!!
+
+        return InMemoryBinaryTrieAddressBook(KAddress(id, address), kFromProps.toInt())
     }
 }
 

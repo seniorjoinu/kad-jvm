@@ -34,6 +34,7 @@ data class BinaryTrie(private val root: TrieNode, private val k: Int) {
         root.kBucket.clear()
         root.one = null
         root.zero = null
+        leaves.add(root)
     }
 
     override fun toString(): String {
