@@ -26,7 +26,7 @@ data class TrieNode(
     }
 }
 
-data class BinaryTrie(private val root: TrieNode, private val k: Int) {
+data class BinaryTrie(private val root: TrieNode, private val k: Int, private val bitSize: Int, private val bitShift: Int) {
     private val leaves: MutableList<TrieNode> = mutableListOf(root)
 
     fun clear() {
@@ -36,6 +36,8 @@ data class BinaryTrie(private val root: TrieNode, private val k: Int) {
         root.zero = null
         leaves.add(root)
     }
+
+    private fun applyBitShift(current: Int) = (bitSize - bitShift) - (current + 1)
 
     override fun toString(): String {
         val elems = getNeighborhoodsByName()
@@ -62,13 +64,13 @@ data class BinaryTrie(private val root: TrieNode, private val k: Int) {
         val one = TrieNode(newBitIndex, currentNode.id + "1", parent = currentNode)
 
         currentNode.kBucket.forEach { d ->
-            val bit = d.testBit(256 - (currentNode.bitIndex + 1))
+            val bit = d.testBit(applyBitShift(currentNode.bitIndex))
 
             if (bit) one.kBucket.add(d)
             else zero.kBucket.add(d)
         }
 
-        val bit = data.testBit(256 - (currentNode.bitIndex + 1))
+        val bit = data.testBit(applyBitShift(currentNode.bitIndex))
         if (bit) one.kBucket.add(data)
         else zero.kBucket.add(data)
 
@@ -127,7 +129,7 @@ data class BinaryTrie(private val root: TrieNode, private val k: Int) {
         var currentNode = root
 
         while (true) {
-            val bit = data.testBit(256 - (currentNode.bitIndex + 1))
+            val bit = data.testBit(applyBitShift(currentNode.bitIndex))
 
             if (bit && currentNode.one != null) {
                 currentNode = currentNode.one!!

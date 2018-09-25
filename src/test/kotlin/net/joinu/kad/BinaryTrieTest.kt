@@ -10,8 +10,8 @@ import java.math.BigInteger
 
 class BinaryTrieTest {
     @Test
-    fun `multiple add and remove operation work okay`() {
-        val trie = BinaryTrie(TrieNode(), 20)
+    fun `multiple add and remove operations work okay`() {
+        val trie = BinaryTrie(TrieNode(), 20, 256, 20)
 
         val dataset = (1..1000)
             .map { SerializationUtils.anyToBytes(it) }

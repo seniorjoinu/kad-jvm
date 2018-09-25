@@ -6,10 +6,12 @@ import java.math.BigInteger
 
 class InMemoryBinaryTrieAddressBook(
     private val myAddress: KAddress,
-    private val k: Int = 20,
-    private val addresses: BinaryTrie = BinaryTrie(TrieNode(), k)
+    k: Int = 20,
+    bitSize: Int = 256,
+    bitShift: Int = 20
 ) : AddressBook {
 
+    private val addresses = BinaryTrie(TrieNode(), k, bitSize, bitShift)
     private val addressesByIds = hashMapOf<KadId, KAddress>()
 
     init {

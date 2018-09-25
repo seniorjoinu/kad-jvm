@@ -23,7 +23,7 @@ open class MultiNodeTest {
         @JvmStatic
         @BeforeClass
         fun initNodes() {
-            nodesConfigs = createNodes(nodesCount, k, baseWebPort, baseP2PPort)
+            nodesConfigs = createNodes(nodesCount, k, baseWebPort, baseP2PPort, 256, 20)
 
             apps = nodesConfigs.map { SpringApplicationBuilder(TestApplication::class.java).properties(it.toProperties()) }
             appContexts = apps.map { it.run() }
@@ -39,21 +39,23 @@ open class MultiNodeTest {
     }
 }
 
-data class NodeConfig(val webPort: Int, val p2pPort: Int, val k: Int) {
+data class NodeConfig(val webPort: Int, val p2pPort: Int, val k: Int, val bitSize: Int, val bitShift: Int) {
     fun toProperties(): Properties {
         val props = Properties()
         props.setProperty("server.port", webPort.toString())
         props.setProperty("node.port", p2pPort.toString())
         props.setProperty("node.k", k.toString())
+        props.setProperty("node.bitSize", bitSize.toString())
+        props.setProperty("node.bitShift", bitShift.toString())
 
         return props
     }
 }
 
-fun createNodes(count: Int, k: Int, baseWebPort: Int, baseP2PPort: Int): List<NodeConfig> {
+fun createNodes(count: Int, k: Int, bitSize: Int, bitShift: Int, baseWebPort: Int, baseP2PPort: Int): List<NodeConfig> {
     val nodesPorts = arrayListOf<NodeConfig>()
     for (i in 1..count) {
-        nodesPorts.add(NodeConfig(baseWebPort + i, baseP2PPort + i, k))
+        nodesPorts.add(NodeConfig(baseWebPort + i, baseP2PPort + i, k, bitSize, bitShift))
     }
 
     return nodesPorts

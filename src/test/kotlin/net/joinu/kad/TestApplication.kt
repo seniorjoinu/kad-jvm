@@ -31,8 +31,15 @@ open class TestApplication {
         val address = Address("localhost", portFromProps.toInt())
 
         val kFromProps = context.environment.getProperty("node.k")!!
+        val bitSizeFromProps = context.environment.getProperty("node.bitSize")!!
+        val bitShiftFromProps = context.environment.getProperty("node.bitShift")!!
 
-        return InMemoryBinaryTrieAddressBook(KAddress(id, address), kFromProps.toInt())
+        return InMemoryBinaryTrieAddressBook(
+            KAddress(id, address),
+            kFromProps.toInt(),
+            bitSizeFromProps.toInt(),
+            bitShiftFromProps.toInt()
+        )
     }
 }
 
